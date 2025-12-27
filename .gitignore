@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 
 # Virtual environment
-venv/
+venv311/
 
 # Flask / SQLite
 *.db
