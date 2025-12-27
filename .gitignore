@@ -4,6 +4,7 @@ __pycache__/
 
 # Virtual environment
 venv311/
+venv/
 
 # Flask / SQLite
 *.db
