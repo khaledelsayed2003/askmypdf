@@ -1,9 +1,17 @@
-# Python
+# Python cache
 __pycache__/
 *.pyc
 
 # Virtual environment
-.venv/
+venv/
 
 # Flask / SQLite
 *.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# local data folders
+uploads/
+chroma_store/
