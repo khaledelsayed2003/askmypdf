@@ -31,7 +31,10 @@ pdfFile.addEventListener("change", async () => {
 
     const data = await res.json();
 
-    
+    if (!data.ok) {
+      setStatus("Upload failed: " + data.error);
+      return;
+    }
 
     setStatus("PDF uploaded successfully. You can now ask questions.");
     questionInput.disabled = false;
