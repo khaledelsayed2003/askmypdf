@@ -1,33 +1,26 @@
-{% extends "base.html" %}
-{% block content %}
-
-<div class="chat-area" id="chatArea">
-  <div class="empty-state">
-    <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
-    <div class="text-muted">
-      The system will answer only from the uploaded PDF.
-    </div>
-  </div>
-</div>
-
 <!-- Bottom Input Bar -->
 <div class="input-bar">
   <div class="container">
     <div class="d-flex gap-2 align-items-center">
-      <button class="btn btn-outline-secondary">
+      <!-- hidden file input -->
+      <input type="file" id="pdfFile" accept="application/pdf" hidden />
+
+      <button class="btn btn-outline-secondary" id="uploadBtn">
         Upload PDF
       </button>
 
       <input
         class="form-control"
+        
         placeholder="Ask a question about the PDF..."
+        disabled
       />
 
-      <button class="btn btn-primary">
+      <button class="btn btn-primary" id="sendBtn" disabled>
         Send
       </button>
     </div>
+
+    <div class="small text-muted mt-2" id="statusLine"></div>
   </div>
 </div>
-
-{% endblock %}
