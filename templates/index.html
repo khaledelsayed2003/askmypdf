@@ -1,11 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="p-4 bg-white border rounded">
-  <h5>Upload a PDF, then ask your question.</h5>
-  <p class="text-muted mb-0">
-    We(Khaled & Zeyad) will build the full chat + RAG system step by step.
-  </p>
+<div class="chat-area" id="chatArea">
+  <div class="empty-state">
+    <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
+    <div class="text-muted">
+      The system will answer only from the uploaded PDF.
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Input Bar -->
+<div class="input-bar">
+  <div class="container">
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary">
+        Upload PDF
+      </button>
+
+      <input
+        class="form-control"
+        placeholder="Ask a question about the PDF..."
+      />
+
+      <button class="btn btn-primary">
+        Send
+      </button>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
