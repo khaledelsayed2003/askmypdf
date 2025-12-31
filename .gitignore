@@ -6,6 +6,9 @@ __pycache__/
 venv311/
 venv/
 
+# Environment variables
+config/.env
+
 # Flask / SQLite
 *.db
 
