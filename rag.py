@@ -16,4 +16,4 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
 
 def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
    
-    raise NotImplementedError("Answering is not implemented yet")
+    raise NotImplementedError("Answering is not implemented yet.")
