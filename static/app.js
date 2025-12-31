@@ -36,9 +36,8 @@ pdfFile.addEventListener("change", async () => {
       return;
     }
 
-    setStatus("PDF uploaded successfully. You can now ask questions.");
-    questionInput.disabled = false;
-    sendBtn.disabled = false;
+    setStatus(`PDF ready: ${data.pdf_name}. You can now ask questions.`);
+    window.location.reload();
 
   } catch (err) {
     setStatus("Upload error. Please try again.");
