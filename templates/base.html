@@ -13,8 +13,17 @@
 <nav class="navbar navbar-dark bg-primary fixed-top">
   <div class="container-fluid">
     <span class="navbar-brand mb-0 h1">AskMyPDF</span>
+
+    <div class="d-flex align-items-center gap-2">
+      {% if pdf_ready %}
+        <span class="badge text-bg-light">PDF: {{ pdf_name }}</span>
+      {% else %}
+        <span class="badge text-bg-warning">No PDF uploaded</span>
+      {% endif %}
+    </div>
   </div>
 </nav>
+
 
 <main class="container" id="mainContent">
   {% block content %}{% endblock %}
