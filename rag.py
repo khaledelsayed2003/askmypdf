@@ -35,7 +35,13 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
 
     embeddings = _get_embeddings()
 
-    
+    # save chunks into Chroma (persist to disk)
+    Chroma.from_documents(
+        documents=chunks,
+        embedding=embeddings,
+        collection_name=_collection_name(pdf_id),
+        persist_directory=chroma_dir,
+    )
 
     print(f"[INDEX] Stored {len(chunks)} chunks in Chroma collection: {_collection_name(pdf_id)}")
 
