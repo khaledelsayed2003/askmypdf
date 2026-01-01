@@ -12,11 +12,15 @@ def _get_embeddings() -> HuggingFaceEmbeddings:
 
 
 def _collection_name(pdf_id: str) -> str:
+    """
+    create a safe collection name for Chroma.
+    We remove '-' because some setups prefer simple names.
+    """
     return f"pdf_{pdf_id}".replace("-", "")
 
 
 def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
-    # load PDF pages(extract text from pdf)
+    # load PDF pages (extract text from pdf)
     loader = PyMuPDFLoader(pdf_path)
     docs = loader.load()
 
@@ -28,22 +32,23 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
     )
     chunks = splitter.split_documents(docs)
 
-    # attach helpful metadata to each chunk
-    for i, d in enumerate(chunks):
-        d.metadata["pdf_id"] = pdf_id
-        d.metadata["chunk_id"] = i
-
+    # embeddings
     embeddings = _get_embeddings()
 
-    # save chunks into Chroma (persist to disk)
-    Chroma.from_documents(
-        documents=chunks,
-        embedding=embeddings,
-        collection_name=_collection_name(pdf_id),
+    # initialize a persistent Chroma collection (empty for now)
+    collection = _collection_name(pdf_id)
+
+    db = Chroma(
+        collection_name=collection,
+        embedding_function=embeddings,
         persist_directory=chroma_dir,
     )
 
-    print(f"[INDEX] Stored {len(chunks)} chunks in Chroma collection: {_collection_name(pdf_id)}")
+    # Temporary debug prints
+    print(f"[INDEX] Collection ready: {collection}")
+    print(f"[INDEX] Pages loaded: {len(docs)} | Chunks created: {len(chunks)}")
+
+    return
 
 
 def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
