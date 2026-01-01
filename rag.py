@@ -2,16 +2,17 @@ from typing import Dict, Any
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 
 
 def _get_embeddings() -> HuggingFaceEmbeddings:
-    """
-    Local embeddings (FREE).
-    Converts text into vectors using sentence-transformers.
-    """
     return HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
+
+
+def _collection_name(pdf_id: str) -> str:
+    return f"pdf_{pdf_id}".replace("-", "")
 
 
 def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
@@ -27,15 +28,16 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
     )
     chunks = splitter.split_documents(docs)
 
-    # create embeddings object (we'll use it for storage later)
+    # attach helpful metadata to each chunk
+    for i, d in enumerate(chunks):
+        d.metadata["pdf_id"] = pdf_id
+        d.metadata["chunk_id"] = i
+
     embeddings = _get_embeddings()
 
-    # Temporary debug print (we will remove it later)
-    sample_vec = embeddings.embed_query("hello world")
-    print(f"[EMBED] Sample embedding vector length: {len(sample_vec)}")
-    print(f"[INDEX] Pages loaded: {len(docs)} | Chunks created: {len(chunks)}")
+    
 
-    return
+    print(f"[INDEX] Stored {len(chunks)} chunks in Chroma collection: {_collection_name(pdf_id)}")
 
 
 def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
