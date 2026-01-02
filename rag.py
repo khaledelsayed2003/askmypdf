@@ -16,11 +16,9 @@ def _collection_name(pdf_id: str) -> str:
 
 
 def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
-    # load PDF pages(extract text from pdf)
     loader = PyMuPDFLoader(pdf_path)
-    docs = loader.load()
+    docs = loader.load()  # one Document per page with metadata (page number)
 
-    # split into chunks
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=900,
         chunk_overlap=150,
@@ -28,14 +26,18 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
     )
     chunks = splitter.split_documents(docs)
 
-    # attach helpful metadata to each chunk
+    # ensure metadata is present and consistent
     for i, d in enumerate(chunks):
         d.metadata["pdf_id"] = pdf_id
         d.metadata["chunk_id"] = i
 
+        # PyMuPDFLoader usually provides "page" already.
+        # But we enforce it safely in case it's missing.
+        if "page" not in d.metadata:
+            d.metadata["page"] = 0  # fallback
+
     embeddings = _get_embeddings()
 
-    # save chunks into Chroma (persist to disk)
     Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
@@ -43,7 +45,10 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
         persist_directory=chroma_dir,
     )
 
-    print(f"[INDEX] Stored {len(chunks)} chunks in Chroma collection: {_collection_name(pdf_id)}")
+    # Debug: show a sample chunk metadata (we will remove later)
+    sample_meta = chunks[0].metadata if chunks else {}
+    print(f"[INDEX] Stored {len(chunks)} chunks in: {_collection_name(pdf_id)}")
+    print(f"[INDEX] Sample metadata: {sample_meta}")
 
 
 def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
