@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -52,4 +52,50 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
 
 
 def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
-    raise NotImplementedError("Answering is not implemented yet.")
+    """
+    - Convert question to embedding
+    - Retrieve top matching chunks from Chroma
+    - Return raw retrieved text (no LLM yet)
+    """
+
+    embeddings = _get_embeddings()
+
+    # Load existing Chroma collection for this PDF
+    db = Chroma(
+        collection_name=_collection_name(pdf_id),
+        embedding_function=embeddings,
+        persist_directory=chroma_dir,
+    )
+
+    # Search for similar chunks
+    results: List[Tuple[Any, float]] = db.similarity_search_with_score(
+        question,
+        k=5
+    )
+
+    if not results:
+        return {
+            "answer": "No relevant content found.",
+            "source": ""
+        }
+
+    # Collect retrieved chunks
+    retrieved_chunks = []
+    pages = set()
+
+    for doc, score in results:
+        retrieved_chunks.append(doc.page_content)
+
+        page = doc.metadata.get("page")
+        if page is not None:
+            pages.add(page + 1)  # human-readable page number
+
+    combined_text = "\n\n---\n\n".join(retrieved_chunks)
+    pages_str = ", ".join(str(p) for p in sorted(pages))
+
+    # TEMPORARY response (for testing retrieval)
+    return {
+        "answer": combined_text,
+        "source": f"Source pages: {pages_str}"
+    }
+
