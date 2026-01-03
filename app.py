@@ -12,16 +12,19 @@ load_dotenv(ENV_PATH)
 
 app = Flask(__name__)
 
-# Secret key for session security
+# Secret key for cookie/session security
 app.secret_key = os.environ.get(
     "FLASK_SECRET_KEY",
     "dev-secret-change-me"
 )
 
-# Folder where uploaded PDFs will be stored
+# Folders
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
-# Create uploads folder if it does not exist
+CHROMA_DIR = os.path.join(BASE_DIR, "chroma_store")
+
+# Create folders at startup
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(CHROMA_DIR, exist_ok=True)
 
 
 @app.get("/")
@@ -48,14 +51,26 @@ def upload_pdf():
     if not file.filename.lower().endswith(".pdf"):
         return jsonify({"ok": False, "error": "Only PDF files are allowed."}), 400
 
-    # Ensure folder exists (Windows)
+    # Ensure folders exist at request time too (Windows/OneDrive safe)
     os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(CHROMA_DIR, exist_ok=True)
 
     pdf_id = str(uuid.uuid4())
     filename = f"{pdf_id}.pdf"
     save_path = os.path.join(UPLOAD_DIR, filename)
 
     file.save(save_path)
+    
+    # Index into Chroma.
+    try:
+        index_pdf_to_chroma(
+            pdf_path=save_path,
+            pdf_id=pdf_id,
+            chroma_dir=CHROMA_DIR
+        )
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Indexing failed: {e}"}), 500
+
 
     # Store PDF info in session
     session["pdf_id"] = pdf_id
