@@ -3,12 +3,19 @@ from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
+from langchain_ollama import ChatOllama
+from langchain.prompts import ChatPromptTemplate
 
 
 def _get_embeddings() -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
+
+
+# temperature=0 means more deterministic, less hallucination.
+def _get_llm() -> ChatOllama:
+    return ChatOllama(model="gemma3:4b", temperature=0)
 
 
 def _collection_name(pdf_id: str) -> str:
@@ -51,51 +58,56 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
     print(f"[INDEX] Sample metadata: {sample_meta}")
 
 
+
 def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
-    """
-    - Convert question to embedding
-    - Retrieve top matching chunks from Chroma
-    - Return raw retrieved text (no LLM yet)
-    """
 
     embeddings = _get_embeddings()
 
-    # Load existing Chroma collection for this PDF
     db = Chroma(
         collection_name=_collection_name(pdf_id),
         embedding_function=embeddings,
         persist_directory=chroma_dir,
     )
 
-    # Search for similar chunks
-    results: List[Tuple[Any, float]] = db.similarity_search_with_score(
-        question,
-        k=5
-    )
+    results: List[Tuple[Any, float]] = db.similarity_search_with_score(question, k=5)
 
     if not results:
-        return {
-            "answer": "No relevant content found.",
-            "source": ""
-        }
+        return {"answer": "Answer is not in this PDF.", "source": ""}
 
-    # Collect retrieved chunks
-    retrieved_chunks = []
+    # Build context and collect source pages
+    context_parts = []
     pages = set()
 
     for doc, score in results:
-        retrieved_chunks.append(doc.page_content)
+        context_parts.append(doc.page_content)
 
         page = doc.metadata.get("page")
         if page is not None:
-            pages.add(page + 1)  # human-readable page number
+            pages.add(int(page) + 1)  # human page number (1-based)
 
-    combined_text = "\n\n---\n\n".join(retrieved_chunks)
-    pages_str = ", ".join(str(p) for p in sorted(pages))
+    context = "\n\n---\n\n".join(context_parts)
+    pages_str = ", ".join(str(p) for p in sorted(pages)) if pages else ""
 
-    # TEMPORARY response (for testing retrieval)
-    return {
-        "answer": combined_text,
-        "source": f"Source pages: {pages_str}"
-    }
+    prompt = ChatPromptTemplate.from_messages([
+        ("system",
+         "You are a PDF-only assistant.\n"
+         "Rules:\n"
+         "1) Answer ONLY using the CONTEXT from the PDF.\n"
+         "2) If the answer is not explicitly in the CONTEXT, reply exactly:\n"
+         "   Answer is not in this PDF.\n"
+         "3) Do not use outside knowledge.\n"
+         "4) Keep the answer short and clear.\n"),
+        ("user",
+         "QUESTION:\n{question}\n\nCONTEXT:\n{context}\n")
+    ])
 
+    llm = _get_llm()
+    msg = prompt.format_messages(question=question, context=context)
+    resp = llm.invoke(msg)
+
+    answer_text = (resp.content or "").strip()
+    if not answer_text:
+        answer_text = "Answer is not in this PDF."
+
+    source = f"Source pages: {pages_str}" if pages_str else ""
+    return {"answer": answer_text, "source": source}
