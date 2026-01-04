@@ -77,7 +77,6 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
     if not results:
         return {"answer": NOT_FOUND_TEXT, "source": ""}
 
-    # Build context and collect source pages
     context_parts = []
     pages = set()
 
@@ -86,12 +85,31 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
 
         page = doc.metadata.get("page")
         if page is not None:
-            pages.add(int(page) + 1)  # human page number (1-based)
+            pages.add(int(page) + 1)
 
     context = "\n\n---\n\n".join(context_parts)
     pages_str = ", ".join(str(p) for p in sorted(pages)) if pages else ""
 
-    prompt = ChatPromptTemplate.from_messages([
+    llm = _get_llm()
+
+    # verification prompt: YES/NO only
+    verify_prompt = ChatPromptTemplate.from_messages([
+        ("system",
+         "Answer with ONLY one word: YES or NO.\n"
+         "Say YES only if the CONTEXT clearly contains the answer.\n"
+         "Otherwise say NO.\n"),
+        ("user",
+         "QUESTION:\n{question}\n\nCONTEXT:\n{context}\n")
+    ])
+
+    verify_msg = verify_prompt.format_messages(question=question, context=context)
+    verify_resp = (llm.invoke(verify_msg).content or "").strip().upper()
+
+    if not verify_resp.startswith("YES"):
+        return {"answer": NOT_FOUND_TEXT, "source": ""}
+
+    # (still using the old single answer prompt for now)
+    answer_prompt = ChatPromptTemplate.from_messages([
         ("system",
          "You are a PDF-only assistant.\n"
          "Rules:\n"
@@ -104,11 +122,9 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
          "QUESTION:\n{question}\n\nCONTEXT:\n{context}\n")
     ])
 
-    llm = _get_llm()
-    msg = prompt.format_messages(question=question, context=context)
-    resp = llm.invoke(msg)
+    answer_msg = answer_prompt.format_messages(question=question, context=context)
+    answer_text = (llm.invoke(answer_msg).content or "").strip()
 
-    answer_text = (resp.content or "").strip()
     if not answer_text:
         answer_text = NOT_FOUND_TEXT
 
