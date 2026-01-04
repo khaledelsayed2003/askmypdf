@@ -72,7 +72,7 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
     )
 
     # retrieve top chunks.
-    results: List[Tuple[Any, float]] = db.similarity_search_with_score(question, k=5)
+    results: List[Tuple[Any, float]] = db.similarity_search_with_score(question, k=6)
 
     if not results:
         return {"answer": NOT_FOUND_TEXT, "source": ""}
