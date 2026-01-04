@@ -59,8 +59,10 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
 
 
 
-def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
+NOT_FOUND_TEXT = "Answer is not in this PDF."
 
+
+def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
     embeddings = _get_embeddings()
 
     db = Chroma(
@@ -69,10 +71,11 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
         persist_directory=chroma_dir,
     )
 
+    # retrieve top chunks.
     results: List[Tuple[Any, float]] = db.similarity_search_with_score(question, k=5)
 
     if not results:
-        return {"answer": "Answer is not in this PDF.", "source": ""}
+        return {"answer": NOT_FOUND_TEXT, "source": ""}
 
     # Build context and collect source pages
     context_parts = []
@@ -94,7 +97,7 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
          "Rules:\n"
          "1) Answer ONLY using the CONTEXT from the PDF.\n"
          "2) If the answer is not explicitly in the CONTEXT, reply exactly:\n"
-         "   Answer is not in this PDF.\n"
+         f"   {NOT_FOUND_TEXT}\n"
          "3) Do not use outside knowledge.\n"
          "4) Keep the answer short and clear.\n"),
         ("user",
@@ -107,7 +110,7 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
 
     answer_text = (resp.content or "").strip()
     if not answer_text:
-        answer_text = "Answer is not in this PDF."
+        answer_text = NOT_FOUND_TEXT
 
     source = f"Source pages: {pages_str}" if pages_str else ""
     return {"answer": answer_text, "source": source}
