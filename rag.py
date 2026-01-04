@@ -108,7 +108,7 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
     if not verify_resp.startswith("YES"):
         return {"answer": NOT_FOUND_TEXT, "source": ""}
 
-    # (still using the old single answer prompt for now)
+    # answer prompt (only if verified)
     answer_prompt = ChatPromptTemplate.from_messages([
         ("system",
          "You are a PDF-only assistant.\n"
