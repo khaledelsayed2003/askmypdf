@@ -95,6 +95,16 @@ def ask():
 
     if not question:
         return jsonify({"ok": False, "error": "Type a question."}), 400
+    
+    try:
+        result = answer_question(
+            question=question,
+            pdf_id=pdf_id,
+            chroma_dir=CHROMA_DIR
+        )
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Answering failed: {e}"}), 500
+
 
     return jsonify({"ok": True})
 
