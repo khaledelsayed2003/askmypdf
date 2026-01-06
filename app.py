@@ -105,8 +105,12 @@ def ask():
     except Exception as e:
         return jsonify({"ok": False, "error": f"Answering failed: {e}"}), 500
 
+    return jsonify({
+        "ok": True,
+        "answer": result["answer"],
+        "source": result.get("source", "")
+    })
 
-    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":
