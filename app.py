@@ -84,5 +84,20 @@ def upload_pdf():
     })
 
 
+@app.post("/ask")
+def ask():
+    data = request.get_json(silent=True) or {}
+    question = (data.get("question") or "").strip()
+
+    pdf_id = session.get("pdf_id")
+    if not pdf_id:
+        return jsonify({"ok": False, "error": "Upload a PDF first."}), 400
+
+    if not question:
+        return jsonify({"ok": False, "error": "Type a question."}), 400
+
+    return jsonify({"ok": True})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
