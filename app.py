@@ -112,6 +112,13 @@ def ask():
     })
 
 
+@app.post("/reset")
+def reset():
+    session.pop("pdf_id", None)
+    session.pop("pdf_name", None)
+    return jsonify({"ok": True})
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
