@@ -34,10 +34,13 @@ def home():
     pdf_name = session.get("pdf_name", "")
     pdf_ready = bool(pdf_id)
 
+    chat = session.get("chat", [])
+
     return render_template(
         "index.html",
         pdf_ready=pdf_ready,
-        pdf_name=pdf_name
+        pdf_name=pdf_name,
+        chat=chat
     )
 
 
