@@ -2,19 +2,31 @@
 {% block content %}
 
 <div class="chat-area" id="chatArea">
-  <div class="empty-state">
-    <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
-    <div class="text-muted">
-      The system will answer only from the uploaded PDF.
+  {% if chat|length == 0 %}
+    <div class="empty-state">
+      <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
+      <div class="text-muted">
+        The system will answer only from the uploaded PDF.
+      </div>
     </div>
-  </div>
+  {% endif %}
 
-  <!--Answer output box (temporary for testing) -->
-  <div class="empty-state mt-3 d-none" id="answerBox">
-    <div class="fw-semibold mb-2">Answer:</div>
-    <div id="answerText"></div>
-    <div class="text-muted small mt-2" id="answerSource"></div>
-  </div>
+  {% for m in chat %}
+    {% if m.role == "user" %}
+      <div class="msg-row user">
+        <div class="msg-bubble user-bubble">{{ m.content }}</div>
+      </div>
+    {% else %}
+      <div class="msg-row assistant">
+        <div class="msg-bubble assistant-bubble">
+          <div class="answer-text">{{ m.content }}</div>
+          {% if m.source %}
+            <div class="source-text">{{ m.source }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
 </div>
 
 <!-- Bottom Input Bar -->
