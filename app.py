@@ -95,7 +95,7 @@ def ask():
 
     if not question:
         return jsonify({"ok": False, "error": "Type a question."}), 400
-    
+
     try:
         result = answer_question(
             question=question,
@@ -104,6 +104,16 @@ def ask():
         )
     except Exception as e:
         return jsonify({"ok": False, "error": f"Answering failed: {e}"}), 500
+
+    #  Save chat history in session
+    chat = session.get("chat", [])
+    chat.append({"role": "user", "content": question})
+    chat.append({
+        "role": "assistant",
+        "content": result["answer"],
+        "source": result.get("source", "")
+    })
+    session["chat"] = chat
 
     return jsonify({
         "ok": True,
