@@ -1,3 +1,4 @@
+import re
 import chromadb
 from typing import Dict, Any, List, Tuple
 from langchain_community.document_loaders import PyMuPDFLoader
@@ -72,6 +73,19 @@ def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
 
 NOT_FOUND_TEXT = "Answer is not in this PDF."
 
+def _keywords(text: str) -> List[str]:
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    words = [w for w in text.split() if len(w) >= 4]
+    stop = {"this", "that", "with", "from", "have", "your", "about", "please", "list", "give", "show", "what", "which"}
+    return [w for w in words if w not in stop]
+
+
+def _keyword_hits(question: str, chunk_text: str) -> int:
+    qk = set(_keywords(question))
+    ck = set(_keywords(chunk_text))
+    return len(qk.intersection(ck))
+
 
 def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, Any]:
     try:
@@ -88,15 +102,27 @@ def answer_question(question: str, pdf_id: str, chroma_dir: str) -> Dict[str, An
         if not results:
             return {"answer": NOT_FOUND_TEXT, "source": ""}
 
+        # Keep only chunks that share keywords with the question (more accurate pages)
+        filtered = []
+        for doc, score in results:
+            hits = _keyword_hits(question, doc.page_content)
+            if hits >= 1:
+                filtered.append((doc, score))
+
+        # If nothing matched keywords, fallback to the best chunk only
+        if not filtered:
+            filtered = results[:1]
+
         context_parts = []
         pages = set()
 
-        for doc, score in results:
+        for doc, score in filtered:
             context_parts.append(doc.page_content)
 
             page = doc.metadata.get("page")
             if page is not None:
                 pages.add(int(page) + 1)
+
 
         context = "\n\n---\n\n".join(context_parts)
         pages_str = ", ".join(str(p) for p in sorted(pages)) if pages else ""
