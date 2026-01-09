@@ -1,4 +1,4 @@
-from rag import index_pdf_to_chroma, answer_question
+from rag import index_pdf_to_chroma, answer_question, delete_pdf_collection
 import os
 import uuid
 from flask import Flask, render_template, request, jsonify, session
@@ -79,6 +79,9 @@ def upload_pdf():
     session["pdf_id"] = pdf_id
     session["pdf_name"] = file.filename
     
+    # Store actual saved path so we can delete the file on reset
+    session["pdf_path"] = save_path
+        
     # new PDF = new conversation.
     session["chat"] = []
 
@@ -130,9 +133,29 @@ def ask():
 
 @app.post("/reset")
 def reset():
+    pdf_id = session.get("pdf_id")
+    pdf_path = session.get("pdf_path")
+
+    # Clear session data
     session.pop("pdf_id", None)
     session.pop("pdf_name", None)
+    session.pop("pdf_path", None)
     session["chat"] = []
+
+    # Delete uploaded PDF file
+    if pdf_path and os.path.exists(pdf_path):
+        try:
+            os.remove(pdf_path)
+        except Exception:
+            pass
+
+    # Delete Chroma collection
+    if pdf_id:
+        try:
+            delete_pdf_collection(pdf_id=pdf_id, chroma_dir=CHROMA_DIR)
+        except Exception:
+            pass
+
     return jsonify({"ok": True})
 
 

@@ -1,3 +1,4 @@
+import chromadb
 from typing import Dict, Any, List, Tuple
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -20,6 +21,21 @@ def _get_llm() -> ChatOllama:
 
 def _collection_name(pdf_id: str) -> str:
     return f"pdf_{pdf_id}".replace("-", "")
+
+
+def delete_pdf_collection(pdf_id: str, chroma_dir: str) -> None:
+    """
+    Deletes the Chroma collection for a specific PDF.
+    Safe to call even if the collection doesn't exist.
+    """
+    name = _collection_name(pdf_id)
+
+    client = chromadb.PersistentClient(path=chroma_dir)
+    try:
+        client.delete_collection(name=name)
+    except Exception:
+        # If it doesn't exist or any issue happens, ignore (reset should still work)
+        pass
 
 
 def index_pdf_to_chroma(pdf_path: str, pdf_id: str, chroma_dir: str) -> None:
