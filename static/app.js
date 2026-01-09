@@ -4,14 +4,12 @@ const questionInput = document.getElementById("questionInput");
 const sendBtn = document.getElementById("sendBtn");
 const statusLine = document.getElementById("statusLine");
 
+// Chat UI container (from index.html)
+const chatArea = document.getElementById("chatArea");
+
 // Navbar elements (from base.html)
 const pdfBadge = document.getElementById("pdfBadge");
 const resetBtn = document.getElementById("resetBtn");
-
-// Answer output
-const answerBox = document.getElementById("answerBox");
-const answerText = document.getElementById("answerText");
-const answerSource = document.getElementById("answerSource");
 
 function setStatus(msg) {
   statusLine.textContent = msg || "";
@@ -29,6 +27,54 @@ function setPdfBadgeEmpty() {
   pdfBadge.textContent = "No PDF uploaded";
   pdfBadge.classList.remove("text-bg-light");
   pdfBadge.classList.add("text-bg-warning");
+}
+
+// ---------- Chat helpers (no reload) ----------
+function scrollChatToBottom() {
+  if (!chatArea) return;
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function addUserMessage(text) {
+  if (!chatArea) return;
+
+  const row = document.createElement("div");
+  row.className = "msg-row user";
+
+  const bubble = document.createElement("div");
+  bubble.className = "msg-bubble user-bubble";
+  bubble.textContent = text;
+
+  row.appendChild(bubble);
+  chatArea.appendChild(row);
+  scrollChatToBottom();
+}
+
+function addAssistantMessage(text, source) {
+  if (!chatArea) return;
+
+  const row = document.createElement("div");
+  row.className = "msg-row assistant";
+
+  const bubble = document.createElement("div");
+  bubble.className = "msg-bubble assistant-bubble";
+
+  const answerDiv = document.createElement("div");
+  answerDiv.className = "answer-text";
+  answerDiv.textContent = text || "";
+
+  bubble.appendChild(answerDiv);
+
+  if (source) {
+    const sourceDiv = document.createElement("div");
+    sourceDiv.className = "source-text";
+    sourceDiv.textContent = source;
+    bubble.appendChild(sourceDiv);
+  }
+
+  row.appendChild(bubble);
+  chatArea.appendChild(row);
+  scrollChatToBottom();
 }
 
 // Upload button -> open file picker
@@ -59,19 +105,27 @@ pdfFile.addEventListener("change", async () => {
       return;
     }
 
-    // Update navbar badge without reload
+    // Update navbar badge (no reload)
     setPdfBadgeReady(data.pdf_name);
 
-    // Enable asking now
+    // Clear old chat UI (because new PDF = new chat)
+    if (chatArea) {
+      chatArea.innerHTML = `
+        <div class="empty-state">
+          <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
+          <div class="text-muted">The system will answer only from the uploaded PDF.</div>
+        </div>
+      `;
+    }
+
+    // Enable asking
     setStatus(`PDF ready: ${data.pdf_name}. You can now ask questions.`);
     questionInput.disabled = false;
     sendBtn.disabled = false;
     uploadBtn.disabled = false;
 
-    // Clear previous answer
-    if (answerBox) answerBox.classList.add("d-none");
-    if (answerText) answerText.textContent = "";
-    if (answerSource) answerSource.textContent = "";
+    // Optional: focus input
+    questionInput.focus();
 
   } catch (err) {
     setStatus("Upload error. Please try again.");
@@ -83,6 +137,16 @@ pdfFile.addEventListener("change", async () => {
 async function askQuestion() {
   const q = (questionInput.value || "").trim();
   if (!q) return;
+
+  // Remove empty-state if it exists
+  const emptyState = chatArea?.querySelector(".empty-state");
+  if (emptyState) emptyState.remove();
+
+  // Show user message immediately
+  addUserMessage(q);
+
+  // Clear input
+  questionInput.value = "";
 
   setStatus("Thinking...");
   sendBtn.disabled = true;
@@ -98,20 +162,18 @@ async function askQuestion() {
     sendBtn.disabled = false;
 
     if (!data.ok) {
-      setStatus(data.error);
+      setStatus(data.error || "Error.");
+      addAssistantMessage(data.error || "Error.", "");
       return;
     }
 
     setStatus("Done.");
-
-    // Show answer
-    if (answerBox) answerBox.classList.remove("d-none");
-    if (answerText) answerText.textContent = data.answer || "";
-    if (answerSource) answerSource.textContent = data.source || "";
+    addAssistantMessage(data.answer || "", data.source || "");
 
   } catch (err) {
     sendBtn.disabled = false;
     setStatus("Ask error. Please try again.");
+    addAssistantMessage("Ask error. Please try again.", "");
   }
 }
 
@@ -121,7 +183,7 @@ questionInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") askQuestion();
 });
 
-// Reset button: clear session + update UI without reload
+// Reset button: clear session + UI (no reload)
 resetBtn?.addEventListener("click", async () => {
   try {
     const res = await fetch("/reset", { method: "POST" });
@@ -132,18 +194,30 @@ resetBtn?.addEventListener("click", async () => {
       return;
     }
 
+    // Update navbar badge
     setPdfBadgeEmpty();
+
+    // Clear chat UI
+    if (chatArea) {
+      chatArea.innerHTML = `
+        <div class="empty-state">
+          <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
+          <div class="text-muted">The system will answer only from the uploaded PDF.</div>
+        </div>
+      `;
+    }
 
     // Disable asking until new PDF uploaded
     questionInput.value = "";
     questionInput.disabled = true;
     sendBtn.disabled = true;
 
-    // Hide answer box
-    if (answerBox) answerBox.classList.add("d-none");
-
     setStatus("Reset complete. Upload a new PDF.");
+    uploadBtn.disabled = false;
+
   } catch (err) {
     setStatus("Reset error. Please try again.");
   }
 });
+
+scrollChatToBottom();
