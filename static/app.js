@@ -12,6 +12,7 @@ const pdfBadge = document.getElementById("pdfBadge");
 const resetBtn = document.getElementById("resetBtn");
 
 function setStatus(msg) {
+  if (!statusLine) return;
   statusLine.textContent = msg || "";
 }
 
@@ -77,20 +78,31 @@ function addAssistantMessage(text, source) {
   scrollChatToBottom();
 }
 
+function renderEmptyState() {
+  if (!chatArea) return;
+  chatArea.innerHTML = `
+    <div class="empty-state">
+      <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
+      <div class="text-muted">The system will answer only from the uploaded PDF.</div>
+    </div>
+  `;
+  scrollChatToBottom();
+}
+
 // Upload button -> open file picker
-uploadBtn.addEventListener("click", () => pdfFile.click());
+uploadBtn?.addEventListener("click", () => pdfFile?.click());
 
 // When user selects a PDF
-pdfFile.addEventListener("change", async () => {
+pdfFile?.addEventListener("change", async () => {
   if (!pdfFile.files.length) return;
 
   const file = pdfFile.files[0];
   setStatus("Uploading and indexing PDF...");
 
   // Disable inputs while uploading
-  uploadBtn.disabled = true;
-  questionInput.disabled = true;
-  sendBtn.disabled = true;
+  if (uploadBtn) uploadBtn.disabled = true;
+  if (questionInput) questionInput.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
 
   const formData = new FormData();
   formData.append("pdf", file);
@@ -101,7 +113,7 @@ pdfFile.addEventListener("change", async () => {
 
     if (!data.ok) {
       setStatus("Upload failed: " + data.error);
-      uploadBtn.disabled = false;
+      if (uploadBtn) uploadBtn.disabled = false;
       return;
     }
 
@@ -109,33 +121,25 @@ pdfFile.addEventListener("change", async () => {
     setPdfBadgeReady(data.pdf_name);
 
     // Clear old chat UI (because new PDF = new chat)
-    if (chatArea) {
-      chatArea.innerHTML = `
-        <div class="empty-state">
-          <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
-          <div class="text-muted">The system will answer only from the uploaded PDF.</div>
-        </div>
-      `;
-    }
+    renderEmptyState();
 
     // Enable asking
     setStatus(`PDF ready: ${data.pdf_name}. You can now ask questions.`);
-    questionInput.disabled = false;
-    sendBtn.disabled = false;
-    uploadBtn.disabled = false;
+    if (questionInput) questionInput.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    if (uploadBtn) uploadBtn.disabled = false;
 
-    // Optional: focus input
-    questionInput.focus();
-
+    // focus input
+    questionInput?.focus();
   } catch (err) {
     setStatus("Upload error. Please try again.");
-    uploadBtn.disabled = false;
+    if (uploadBtn) uploadBtn.disabled = false;
   }
 });
 
 // Send question to /ask
 async function askQuestion() {
-  const q = (questionInput.value || "").trim();
+  const q = (questionInput?.value || "").trim();
   if (!q) return;
 
   // Remove empty-state if it exists
@@ -146,10 +150,10 @@ async function askQuestion() {
   addUserMessage(q);
 
   // Clear input
-  questionInput.value = "";
+  if (questionInput) questionInput.value = "";
 
   setStatus("Thinking...");
-  sendBtn.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
 
   try {
     const res = await fetch("/ask", {
@@ -159,7 +163,7 @@ async function askQuestion() {
     });
 
     const data = await res.json();
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
 
     if (!data.ok) {
       setStatus(data.error || "Error.");
@@ -169,17 +173,16 @@ async function askQuestion() {
 
     setStatus("Done.");
     addAssistantMessage(data.answer || "", data.source || "");
-
   } catch (err) {
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
     setStatus("Ask error. Please try again.");
     addAssistantMessage("Ask error. Please try again.", "");
   }
 }
 
-sendBtn.addEventListener("click", askQuestion);
+sendBtn?.addEventListener("click", askQuestion);
 
-questionInput.addEventListener("keydown", (e) => {
+questionInput?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") askQuestion();
 });
 
@@ -198,23 +201,17 @@ resetBtn?.addEventListener("click", async () => {
     setPdfBadgeEmpty();
 
     // Clear chat UI
-    if (chatArea) {
-      chatArea.innerHTML = `
-        <div class="empty-state">
-          <h5 class="mb-2">Upload a PDF, then ask your question.</h5>
-          <div class="text-muted">The system will answer only from the uploaded PDF.</div>
-        </div>
-      `;
-    }
+    renderEmptyState();
 
     // Disable asking until new PDF uploaded
-    questionInput.value = "";
-    questionInput.disabled = true;
-    sendBtn.disabled = true;
+    if (questionInput) {
+      questionInput.value = "";
+      questionInput.disabled = true;
+    }
+    if (sendBtn) sendBtn.disabled = true;
 
     setStatus("Reset complete. Upload a new PDF.");
-    uploadBtn.disabled = false;
-
+    if (uploadBtn) uploadBtn.disabled = false;
   } catch (err) {
     setStatus("Reset error. Please try again.");
   }
