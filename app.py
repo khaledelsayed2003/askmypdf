@@ -78,6 +78,9 @@ def upload_pdf():
     # Store PDF info in session
     session["pdf_id"] = pdf_id
     session["pdf_name"] = file.filename
+    
+    # new PDF = new conversation.
+    session["chat"] = []
 
     return jsonify({
         "ok": True,
@@ -129,7 +132,9 @@ def ask():
 def reset():
     session.pop("pdf_id", None)
     session.pop("pdf_name", None)
+    session["chat"] = []
     return jsonify({"ok": True})
+
 
 
 
