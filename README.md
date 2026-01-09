@@ -218,7 +218,8 @@ You are free to use, modify, and distribute it.
 ## 👤 Author
 
 **Khaled Elsayed**
-📧 Email: khaled.elsayed2206@gmail.com
-🧠 Built for learning, research, and real-world RAG systems
+
+- 📧 Email: khaled.elsayed2206@gmail.com
+- 🧠 Built for learning, research, and real-world RAG systems
 
 ---
