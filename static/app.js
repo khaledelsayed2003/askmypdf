@@ -3,6 +3,7 @@ const uploadBtn = document.getElementById("uploadBtn");
 const questionInput = document.getElementById("questionInput");
 const sendBtn = document.getElementById("sendBtn");
 const statusLine = document.getElementById("statusLine");
+const micBtn = document.getElementById("micBtn");
 
 // Chat UI container (from index.html)
 const chatArea = document.getElementById("chatArea");
@@ -128,6 +129,8 @@ pdfFile?.addEventListener("change", async () => {
     if (questionInput) questionInput.disabled = false;
     if (sendBtn) sendBtn.disabled = false;
     if (uploadBtn) uploadBtn.disabled = false;
+    if (micBtn) micBtn.disabled = false;
+
 
     // focus input
     questionInput?.focus();
@@ -209,6 +212,7 @@ resetBtn?.addEventListener("click", async () => {
       questionInput.disabled = true;
     }
     if (sendBtn) sendBtn.disabled = true;
+    if (micBtn) micBtn.disabled = true;
 
     setStatus("Reset complete. Upload a new PDF.");
     if (uploadBtn) uploadBtn.disabled = false;
@@ -216,5 +220,47 @@ resetBtn?.addEventListener("click", async () => {
     setStatus("Reset error. Please try again.");
   }
 });
+
+
+// ---------- Voice input----------
+let recognition = null;
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript || "";
+    if (questionInput) questionInput.value = text;
+    setStatus("Voice captured. You can edit then press Send.");
+  };
+
+  recognition.onerror = () => {
+    setStatus("Mic error. Try again.");
+  };
+
+  recognition.onend = () => {
+    if (micBtn) micBtn.disabled = false;
+  };
+} else {
+  if (micBtn) {
+    micBtn.disabled = true;
+    micBtn.title = "Voice not supported in this browser";
+  }
+}
+
+micBtn?.addEventListener("click", () => {
+  if (!recognition) return;
+
+  if (micBtn) micBtn.disabled = true;
+  setStatus("Listening...");
+  recognition.start();
+});
+
 
 scrollChatToBottom();
