@@ -3,17 +3,26 @@ body {
 }
 
 #mainContent {
-  padding-top: 85px;    /* navbar space */
+  padding-top: 85px;     /* navbar space */
   padding-bottom: 120px; /* input bar space */
 }
 
+/* Chat container */
 .chat-area {
   min-height: calc(100vh - 220px);
   display: flex;
   flex-direction: column;
   gap: 14px;
+
+  /* scrolling */
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+
+  /* a bit of breathing room */
+  padding-top: 20px;
 }
 
+/* Empty state card */
 .empty-state {
   background: white;
   border: 2px solid #e6e7ef;
@@ -21,6 +30,51 @@ body {
   padding: 22px;
 }
 
+.msg-row {
+  display: flex;
+  width: 100%;
+}
+
+/* user (question)= right side */
+.msg-row.user {
+  justify-content: flex-end;
+}
+
+/* assistant (answer)= left side */
+.msg-row.assistant {
+  justify-content: flex-start;
+}
+
+.msg-bubble {
+  max-width: 70%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid #e6e7ef;
+  background: #ffffff;
+
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* user bubble */
+.user-bubble {
+  background: #e9f2ff;
+  border-top-right-radius: 6px;
+}
+
+/* assistant bubble */
+.assistant-bubble {
+  background: #ffffff;
+  border-top-left-radius: 6px;
+}
+
+.source-text {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+/* Bottom input bar */
 .input-bar {
   position: fixed;
   left: 0;
@@ -30,3 +84,5 @@ body {
   border-top: 2px solid #e6e7ef;
   padding: 14px 0 16px;
 }
+
+
